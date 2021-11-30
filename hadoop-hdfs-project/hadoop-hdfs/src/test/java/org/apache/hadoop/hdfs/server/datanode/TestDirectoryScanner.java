@@ -517,7 +517,7 @@ public class TestDirectoryScanner {
       runTest(parallelism);
     }
   }
-  
+
   public void runTest(int parallelism) throws Exception {
     cluster = new MiniDFSCluster.Builder(CONF).build();
     try {
@@ -629,7 +629,7 @@ public class TestDirectoryScanner {
       truncateBlockFile();
       scan(totalBlocks+3, 6, 2, 2, 3, 2);
       scan(totalBlocks+1, 0, 0, 0, 0, 0);
-      
+
       // Test14: make sure no throttling is happening
       assertTrue("Throttle appears to be engaged",
           scanner.timeWaitingMs.get() < 10L);
@@ -640,7 +640,7 @@ public class TestDirectoryScanner {
       ////assertTrue(scanner.getRunStatus()); //assumes "real" FSDataset, not sim
       scanner.shutdown();
       assertFalse(scanner.getRunStatus());
-      
+
     } finally {
       if (scanner != null) {
         scanner.shutdown();
@@ -906,7 +906,7 @@ public class TestDirectoryScanner {
     assertNotNull(memBlock);
     assertEquals(genStamp, memBlock.getGenerationStamp());
   }
-  
+
   private void verifyStorageType(long blockId, boolean expectTransient) {
     final ReplicaInfo memBlock;
     memBlock = FsDatasetTestUtil.fetchReplicaInfo(fds, bpid, blockId);
@@ -929,7 +929,7 @@ public class TestDirectoryScanner {
     public long getAvailable() throws IOException {
       return 0;
     }
-    
+
     public File getFinalizedDir(String bpid) throws IOException {
       return new File("/base/current/" + bpid + "/finalized");
     }
@@ -1024,34 +1024,36 @@ public class TestDirectoryScanner {
   }
 
   private final static TestFsVolumeSpi TEST_VOLUME = new TestFsVolumeSpi();
-  
+
   private final static String BPID_1 = "BP-783049782-127.0.0.1-1370971773491";
-  
+
   private final static String BPID_2 = "BP-367845636-127.0.0.1-5895645674231";
-      
-  void testScanInfoObject(long blockId, File blockFile, File metaFile)
+
+  void testScanInfoObject(long blockId, File baseDir, String blockFile,
+                          String metaFile)
       throws Exception {
     FsVolumeSpi.ScanInfo scanInfo =
-        new FsVolumeSpi.ScanInfo(blockId, blockFile, metaFile, TEST_VOLUME);
+            new FsVolumeSpi.ScanInfo(blockId, baseDir, blockFile, metaFile,
+                    TEST_VOLUME);
     assertEquals(blockId, scanInfo.getBlockId());
     if (blockFile != null) {
-      assertEquals(blockFile.getAbsolutePath(),
+      assertEquals(new File(baseDir, blockFile).getAbsolutePath(),
           scanInfo.getBlockFile().getAbsolutePath());
     } else {
       assertNull(scanInfo.getBlockFile());
     }
     if (metaFile != null) {
-      assertEquals(metaFile.getAbsolutePath(),
+      assertEquals(new File(baseDir, metaFile).getAbsolutePath(),
           scanInfo.getMetaFile().getAbsolutePath());
     } else {
       assertNull(scanInfo.getMetaFile());
     }
     assertEquals(TEST_VOLUME, scanInfo.getVolume());
   }
-  
+
   void testScanInfoObject(long blockId) throws Exception {
     FsVolumeSpi.ScanInfo scanInfo =
-        new FsVolumeSpi.ScanInfo(blockId, null, null, null);
+            new FsVolumeSpi.ScanInfo(blockId, null, null, null, null);
     assertEquals(blockId, scanInfo.getBlockId());
     assertNull(scanInfo.getBlockFile());
     assertNull(scanInfo.getMetaFile());
@@ -1060,27 +1062,19 @@ public class TestDirectoryScanner {
   @Test(timeout=120000)
   public void TestScanInfo() throws Exception {
     testScanInfoObject(123,
-        new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath(),
-            "blk_123"),
-        new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath(),
-            "blk_123__1001.meta"));
+            new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath()),
+            "blk_123", "blk_123__1001.meta");
     testScanInfoObject(464,
-        new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath(),
-            "blk_123"),
-        null);
+            new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath()),
+            "blk_123", null);
     testScanInfoObject(523,
-        null,
-        new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath(),
-            "blk_123__1009.meta"));
-    testScanInfoObject(789,
-        null,
-        null);
+            new File(TEST_VOLUME.getFinalizedDir(BPID_1).getAbsolutePath()),
+            null, "blk_123__1009.meta");
+    testScanInfoObject(789, null, null, null);
     testScanInfoObject(456);
     testScanInfoObject(123,
-        new File(TEST_VOLUME.getFinalizedDir(BPID_2).getAbsolutePath(),
-            "blk_567"),
-        new File(TEST_VOLUME.getFinalizedDir(BPID_2).getAbsolutePath(),
-            "blk_567__1004.meta"));
+            new File(TEST_VOLUME.getFinalizedDir(BPID_2).getAbsolutePath()),
+            "blk_567", "blk_567__1004.meta");
   }
 
   /**
