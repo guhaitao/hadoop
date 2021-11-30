@@ -44,29 +44,29 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A JUnit test for corrupted file handling.
- * This test creates a bunch of files/directories with replication 
- * factor of 2. Then verifies that a client can automatically 
- * access the remaining valid replica inspite of the following 
+ * This test creates a bunch of files/directories with replication
+ * factor of 2. Then verifies that a client can automatically
+ * access the remaining valid replica inspite of the following
  * types of simulated errors:
  *
  *  1. Delete meta file on one replica
  *  2. Truncates meta file on one replica
  *  3. Corrupts the meta file header on one replica
  *  4. Corrupts any random offset and portion of the meta file
- *  5. Swaps two meta files, i.e the format of the meta files 
- *     are valid but their CRCs do not match with their corresponding 
+ *  5. Swaps two meta files, i.e the format of the meta files
+ *     are valid but their CRCs do not match with their corresponding
  *     data blocks
- * The above tests are run for varied values of dfs.bytes-per-checksum 
- * and dfs.blocksize. It tests for the case when the meta file is 
+ * The above tests are run for varied values of dfs.bytes-per-checksum
+ * and dfs.blocksize. It tests for the case when the meta file is
  * multiple blocks.
  *
- * Another portion of the test is commented out till HADOOP-1557 
+ * Another portion of the test is commented out till HADOOP-1557
  * is addressed:
- *  1. Create file with 2 replica, corrupt the meta file of replica, 
- *     decrease replication factor from 2 to 1. Validate that the 
+ *  1. Create file with 2 replica, corrupt the meta file of replica,
+ *     decrease replication factor from 2 to 1. Validate that the
  *     remaining replica is the good one.
- *  2. Create file with 2 replica, corrupt the meta file of one replica, 
- *     increase replication factor of file to 3. verify that the new 
+ *  2. Create file with 2 replica, corrupt the meta file of one replica,
+ *     increase replication factor of file to 3. verify that the new
  *     replica was created from the non-corrupted replica.
  */
 public class TestCrcCorruption {
@@ -81,7 +81,7 @@ public class TestCrcCorruption {
     DFSClientFaultInjector.set(faultInjector);
   }
 
-  /** 
+  /**
    * Test case for data corruption during data transmission for
    * create/write. To recover from corruption while writing, at
    * least two replicas are needed.
@@ -147,7 +147,7 @@ public class TestCrcCorruption {
   }
 
 
-  /** 
+  /**
    * check if DFS can handle corrupted CRC blocks
    */
   private void thistest(Configuration conf, DFSTestUtil util) throws Exception {
@@ -173,7 +173,7 @@ public class TestCrcCorruption {
       final DataNode dn = cluster.getDataNodes().get(dnIdx);
       final String bpid = cluster.getNamesystem().getBlockPoolId();
       List<ReplicaInfo> replicas =
-          dn.getFSDataset().getFinalizedBlocks(bpid);
+          dn.getFSDataset().getSortedFinalizedBlocks(bpid);
       assertTrue("Replicas do not exist", !replicas.isEmpty());
 
       for (int idx = 0; idx < replicas.size(); idx++) {
@@ -202,7 +202,7 @@ public class TestCrcCorruption {
 
       //
       // set replication factor back to 1. This causes only one replica of
-      // of each block to remain in HDFS. The check is to make sure that 
+      // of each block to remain in HDFS. The check is to make sure that
       // the corrupted replica generated above is the one that gets deleted.
       // This test is currently disabled until HADOOP-1557 is solved.
       //

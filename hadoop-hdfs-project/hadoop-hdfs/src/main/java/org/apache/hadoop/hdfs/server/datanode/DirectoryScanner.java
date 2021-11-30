@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,7 +99,7 @@ public class DirectoryScanner implements Runnable {
    */
   @VisibleForTesting
   final Map<String, Stats> stats = new HashMap<String, Stats>();
-  
+
   /**
    * Allow retaining diffs for unit test and analysis. Defaults to false (off)
    * @param b whether to retain diffs
@@ -122,7 +121,7 @@ public class DirectoryScanner implements Runnable {
     long missingMemoryBlocks = 0;
     long mismatchBlocks = 0;
     long duplicateBlocks = 0;
-    
+
     /**
      * Create a new Stats object for the given blockpool ID.
      * @param bpid blockpool ID
@@ -130,7 +129,7 @@ public class DirectoryScanner implements Runnable {
     public Stats(String bpid) {
       this.bpid = bpid;
     }
-    
+
     @Override
     public String toString() {
       return "BlockPool " + bpid
@@ -144,9 +143,9 @@ public class DirectoryScanner implements Runnable {
   /**
    * Helper class for compiling block info reports from report compiler threads.
    */
-  static class ScanInfoPerBlockPool extends 
+  static class ScanInfoPerBlockPool extends
                      HashMap<String, LinkedList<ScanInfo>> {
-    
+
     private static final long serialVersionUID = 1L;
 
     /**
@@ -161,7 +160,7 @@ public class DirectoryScanner implements Runnable {
      * @param sz initial expected size
      */
     ScanInfoPerBlockPool(int sz) {super(sz);}
-    
+
     /**
      * Merges {@code that} ScanInfoPerBlockPool into this one
      *
@@ -169,11 +168,11 @@ public class DirectoryScanner implements Runnable {
      */
     public void addAll(ScanInfoPerBlockPool that) {
       if (that == null) return;
-      
+
       for (Entry<String, LinkedList<ScanInfo>> entry : that.entrySet()) {
         String bpid = entry.getKey();
         LinkedList<ScanInfo> list = entry.getValue();
-        
+
         if (this.containsKey(bpid)) {
           //merge that per-bpid linked list with this one
           this.get(bpid).addAll(list);
@@ -183,7 +182,7 @@ public class DirectoryScanner implements Runnable {
         }
       }
     }
-    
+
     /**
      * Convert all the LinkedList values in this ScanInfoPerBlockPool map
      * into sorted arrays, and return a new map of these arrays per blockpool
@@ -191,18 +190,18 @@ public class DirectoryScanner implements Runnable {
      * @return a map of ScanInfo arrays per blockpool
      */
     public Map<String, ScanInfo[]> toSortedArrays() {
-      Map<String, ScanInfo[]> result = 
+      Map<String, ScanInfo[]> result =
         new HashMap<String, ScanInfo[]>(this.size());
-      
+
       for (Entry<String, LinkedList<ScanInfo>> entry : this.entrySet()) {
         String bpid = entry.getKey();
         LinkedList<ScanInfo> list = entry.getValue();
-        
+
         // convert list to array
         ScanInfo[] record = list.toArray(new ScanInfo[list.size()]);
         // Sort array based on blockId
         Arrays.sort(record);
-        result.put(bpid, record);            
+        result.put(bpid, record);
       }
       return result;
     }
@@ -250,11 +249,11 @@ public class DirectoryScanner implements Runnable {
       throttleLimitMsPerSec = throttle;
     }
 
-    int threads = 
+    int threads =
         conf.getInt(DFSConfigKeys.DFS_DATANODE_DIRECTORYSCAN_THREADS_KEY,
                     DFSConfigKeys.DFS_DATANODE_DIRECTORYSCAN_THREADS_DEFAULT);
 
-    reportCompileThreadPool = Executors.newFixedThreadPool(threads, 
+    reportCompileThreadPool = Executors.newFixedThreadPool(threads,
         new Daemon.DaemonFactory());
     masterThread = new ScheduledThreadPoolExecutor(1,
         new Daemon.DaemonFactory());
@@ -281,10 +280,10 @@ public class DirectoryScanner implements Runnable {
     }
 
     LOG.info(logMsg);
-    masterThread.scheduleAtFixedRate(this, offset, scanPeriodMsecs, 
+    masterThread.scheduleAtFixedRate(this, offset, scanPeriodMsecs,
                                      TimeUnit.MILLISECONDS);
   }
-  
+
   /**
    * Return whether the scanner has been started.
    *
@@ -317,8 +316,8 @@ public class DirectoryScanner implements Runnable {
       }
 
       //We're are okay to run - do it
-      reconcile();      
-      
+      reconcile();
+
     } catch (Exception e) {
       //Log and continue - allows Executor to run again next cycle
       LOG.error("Exception during DirectoryScanner execution - will continue next cycle", e);
@@ -328,7 +327,7 @@ public class DirectoryScanner implements Runnable {
       throw er;
     }
   }
-  
+
   /**
    * Stops the directory scanner.  This method will wait for 1 minute for the
    * main thread to exit and an additional 1 minute for the report compilation
@@ -339,7 +338,7 @@ public class DirectoryScanner implements Runnable {
     if (!shouldRun) {
       LOG.warn("DirectoryScanner: shutdown has been called, but periodic scanner not started");
     } else {
-      LOG.warn("DirectoryScanner: shutdown has been called");      
+      LOG.warn("DirectoryScanner: shutdown has been called");
     }
     shouldRun = false;
     if (masterThread != null) masterThread.shutdown();
@@ -376,7 +375,7 @@ public class DirectoryScanner implements Runnable {
     for (Entry<String, LinkedList<ScanInfo>> entry : diffs.entrySet()) {
       String bpid = entry.getKey();
       LinkedList<ScanInfo> diff = entry.getValue();
-      
+
       for (ScanInfo info : diff) {
         dataset.checkAndUpdate(bpid, info);
       }
@@ -397,16 +396,15 @@ public class DirectoryScanner implements Runnable {
       for (Entry<String, ScanInfo[]> entry : diskReport.entrySet()) {
         String bpid = entry.getKey();
         ScanInfo[] blockpoolReport = entry.getValue();
-        
+
         Stats statsRecord = new Stats(bpid);
         stats.put(bpid, statsRecord);
         LinkedList<ScanInfo> diffRecord = new LinkedList<ScanInfo>();
         diffs.put(bpid, diffRecord);
-        
+
         statsRecord.totalBlocks = blockpoolReport.length;
-        final List<ReplicaInfo> bl = dataset.getFinalizedBlocks(bpid);
-        Collections.sort(bl); // Sort based on blockId
-  
+        final List<ReplicaInfo> bl = dataset.getSortedFinalizedBlocks(bpid);
+
         int d = 0; // index for blockpoolReport
         int m = 0; // index for memReprot
         while (m < bl.size() && d < blockpoolReport.length) {
@@ -484,7 +482,7 @@ public class DirectoryScanner implements Runnable {
    * @param statsRecord the stats to update
    * @param info the differing info
    */
-  private void addDifference(LinkedList<ScanInfo> diffRecord, 
+  private void addDifference(LinkedList<ScanInfo> diffRecord,
                              Stats statsRecord, ScanInfo info) {
     statsRecord.missingMetaFile += info.getMetaFile() == null ? 1 : 0;
     statsRecord.missingBlockFile += info.getBlockFile() == null ? 1 : 0;

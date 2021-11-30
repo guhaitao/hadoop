@@ -90,7 +90,7 @@ public class ExternalDatasetImpl implements FsDatasetSpi<ExternalVolumeImpl> {
   }
 
   @Override
-  public List<ReplicaInfo> getFinalizedBlocks(String bpid) {
+  public List<ReplicaInfo> getSortedFinalizedBlocks(String bpid) {
     return null;
   }
 
@@ -430,14 +430,14 @@ public class ExternalDatasetImpl implements FsDatasetSpi<ExternalVolumeImpl> {
   }
 
   @Override
-  public void setPinning(ExtendedBlock block) throws IOException {    
+  public void setPinning(ExtendedBlock block) throws IOException {
   }
 
   @Override
   public boolean getPinning(ExtendedBlock block) throws IOException {
     return false;
   }
-  
+
   @Override
   public boolean isDeletingBlock(String bpid, long blockId) {
     return false;
