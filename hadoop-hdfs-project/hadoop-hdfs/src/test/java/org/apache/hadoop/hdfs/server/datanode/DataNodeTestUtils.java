@@ -91,7 +91,7 @@ public class DataNodeTestUtils {
       bpos.triggerHeartbeatForTests();
     }
   }
-  
+
   public static void triggerBlockReport(DataNode dn) throws IOException {
     for (BPOfferService bpos : dn.getAllBpOs()) {
       bpos.triggerBlockReportForTests();
@@ -117,10 +117,10 @@ public class DataNodeTestUtils {
   }
 
   /**
-   * This method is used for testing. 
+   * This method is used for testing.
    * Examples are adding and deleting blocks directly.
    * The most common usage will be when the data node's storage is simulated.
-   * 
+   *
    * @return the fsdataset that stores the blocks
    */
   public static FsDatasetSpi<?> getFSDataset(DataNode dn) {
@@ -195,7 +195,7 @@ public class DataNodeTestUtils {
       }
     }
   }
-  
+
   public static void runDirectoryScanner(DataNode dn) throws IOException {
     DirectoryScanner directoryScanner = dn.getDirectoryScanner();
     if (directoryScanner != null) {
@@ -239,7 +239,7 @@ public class DataNodeTestUtils {
     try (FsDatasetSpi.FsVolumeReferences volumes = dn.getFSDataset()
         .getFsVolumeReferences()) {
       for (FsVolumeSpi vol : volumes) {
-        if (vol.getBaseURI().equals(basePath.toURI())) {
+        if (new File(vol.getBaseURI()).equals(basePath)) {
           return (FsVolumeImpl) vol;
         }
       }

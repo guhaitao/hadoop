@@ -94,7 +94,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * The underlying volume used to store replica.
- * 
+ *
  * It uses the {@link FsDatasetImpl} object for synchronization.
  */
 @InterfaceAudience.Private
@@ -133,6 +133,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
   protected volatile long configuredCapacity;
   private final FileIoProvider fileIoProvider;
   private final DataNodeVolumeMetrics metrics;
+  private URI baseURI;
 
   /**
    * Per-volume worker pool that processes new blocks to cache.
@@ -175,6 +176,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
       File parent = currentDir.getParentFile();
       cacheExecutor = initializeCacheExecutor(parent);
       this.metrics = DataNodeVolumeMetrics.create(conf, parent.getPath());
+      this.baseURI = new File(currentDir.getParent()).toURI();
     } else {
       cacheExecutor = null;
       this.metrics = null;
@@ -331,7 +333,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
   File getCurrentDir() {
     return currentDir;
   }
-  
+
   protected File getRbwDir(String bpid) throws IOException {
     return getBlockPoolSlice(bpid).getRbwDir();
   }
@@ -396,11 +398,11 @@ public class FsVolumeImpl implements FsVolumeSpi {
   long getBlockPoolUsed(String bpid) throws IOException {
     return getBlockPoolSlice(bpid).getDfsUsed();
   }
-  
+
   /**
    * Return either the configured capacity of the file system if configured; or
    * the capacity of the file system excluding space reserved for non-HDFS.
-   * 
+   *
    * @return the unreserved number of bytes left in this filesystem. May be
    *         zero.
    */
@@ -427,7 +429,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
   /*
    * Calculate the available space of the filesystem, excluding space reserved
    * for non-HDFS and space reserved for RBW
-   * 
+   *
    * @return the available number of bytes left in this filesystem. May be zero.
    */
   @Override
@@ -500,7 +502,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
 
   @Override
   public URI getBaseURI() {
-    return new File(currentDir.getParent()).toURI();
+    return baseURI;
   }
 
   @Override
@@ -535,7 +537,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
    */
   @Override
   public String[] getBlockPoolList() {
-    return bpSlices.keySet().toArray(new String[bpSlices.keySet().size()]);   
+    return bpSlices.keySet().toArray(new String[bpSlices.keySet().size()]);
   }
 
   /**
@@ -746,7 +748,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
         LOG.trace("getSubdirEntries({}, {}): no entries found in {}",
             storageID, bpid, dir.getAbsolutePath());
       } else {
-        LOG.trace("getSubdirEntries({}, {}): listed {} entries in {}", 
+        LOG.trace("getSubdirEntries({}, {}): listed {} entries in {}",
             storageID, bpid, entries.size(), dir.getAbsolutePath());
       }
       cache = entries;
@@ -994,7 +996,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
     }
     return VolumeCheckResult.HEALTHY;
   }
-    
+
   void getVolumeMap(ReplicaMap volumeMap,
                     final RamDiskReplicaTracker ramDiskReplicaMap)
       throws IOException {
@@ -1002,7 +1004,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
       s.getVolumeMap(volumeMap, ramDiskReplicaMap);
     }
   }
-  
+
   void getVolumeMap(String bpid, ReplicaMap volumeMap,
                     final RamDiskReplicaTracker ramDiskReplicaMap)
       throws IOException {
@@ -1050,7 +1052,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
     }
     bpSlices.put(bpid, bp);
   }
-  
+
   void shutdownBlockPool(String bpid, BlockListAsLongs blocksListsAsLongs) {
     BlockPoolSlice bp = bpSlices.get(bpid);
     if (bp != null) {
@@ -1076,7 +1078,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
     }
     return true;
   }
-  
+
   void deleteBPDirectories(String bpid, boolean force) throws IOException {
     File volumeCurrentDir = this.getCurrentDir();
     File bpDir = new File(volumeCurrentDir, bpid);
@@ -1084,7 +1086,7 @@ public class FsVolumeImpl implements FsVolumeSpi {
       // nothing to be deleted
       return;
     }
-    File tmpDir = new File(bpDir, DataStorage.STORAGE_DIR_TMP); 
+    File tmpDir = new File(bpDir, DataStorage.STORAGE_DIR_TMP);
     File bpCurrentDir = new File(bpDir, DataStorage.STORAGE_DIR_CURRENT);
     File finalizedDir = new File(bpCurrentDir,
         DataStorage.STORAGE_DIR_FINALIZED);
@@ -1133,12 +1135,12 @@ public class FsVolumeImpl implements FsVolumeSpi {
   public String getStorageID() {
     return storageID;
   }
-  
+
   @Override
   public StorageType getStorageType() {
     return storageType;
   }
-  
+
   DatanodeStorage toDatanodeStorage() {
     return new DatanodeStorage(storageID, DatanodeStorage.State.NORMAL, storageType);
   }
